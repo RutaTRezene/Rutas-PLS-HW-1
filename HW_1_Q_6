@@ -1,0 +1,179 @@
+'''
+File: HW_1_Q_6
+
+Class: PLS 481, Spring 2025
+
+Author: Ruta Rezene
+
+purpose: we calculate the fractal dimension by tracking the size and radius of 
+this structure. The size is the total number of unique cells visited, 
+and the radius is the average distance from the starting point 
+of the walkers to the visited cells. The fractal dimension (D) 
+is calculated by relating the size (S) of the cluster to its mean radius (R), 
+using the formula S ~ R^D. By plotting S against R on a log-log scale and
+fitting the data, we can estimate D. For DLA clusters, we expect this 
+dimension to be around 1.7, which reflects how the cluster fills space and 
+its complexity.
+    
+Sources: Lecture content, Chatgpt
+'''
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# DLA Simulation Functions 
+
+def runWalker(a, stepChoices, grid_size, seed_center):
+    """
+    Run a single random walker until it attaches to the cluster.
+    
+    Parameters:
+      a           : 2D numpy array representing the cluster grid.
+      stepChoices : List of possible step increments.
+      grid_size   : Size of the square grid.
+      seed_center : Center coordinates used to compute distance.
+      
+    Returns:
+      walkerLength: Number of steps taken by the walker.
+    """
+    walkerLength = 0
+    
+    # Choose a random starting position on one of the boundaries.
+    startX = np.random.randint(0, grid_size)
+    startAx = np.random.randint(0, 4)
+    if startAx == 0:
+        startPos = np.array([0, startX])
+    elif startAx == 1:
+        startPos = np.array([grid_size-1, startX])
+    elif startAx == 2:
+        startPos = np.array([startX, 0])
+    else:
+        startPos = np.array([startX, grid_size-1])
+    
+    # Continue walking until the walker reaches a site adjacent to the cluster.
+    while a[startPos[0], startPos[1]] == 0:
+        walkerLength += 1
+        step = np.array(stepChoices[np.random.randint(0, len(stepChoices))])
+        newPos = startPos + step
+        
+        # Check if the new position is within the grid bounds.
+        if 0 <= newPos[0] < grid_size and 0 <= newPos[1] < grid_size:
+            # If the new position is adjacent to an occupied site, attach the walker.
+            if a[newPos[0], newPos[1]] > 0:
+                attachPos = startPos  # Attach at the last valid position.
+                # Compute distance from the seed center (for visualizing branch length)
+                distance = np.linalg.norm(attachPos - seed_center)
+                a[attachPos[0], attachPos[1]] = distance
+                return walkerLength
+            else:
+                startPos = newPos
+        else:
+            # If out of bounds, simply continue (or you can add handling for boundaries).
+            continue
+    return walkerLength
+
+def calculate_radius_of_gyration(a):
+    '''
+    Figure out how "spread out" this cluster is by calculating 
+    the radius of gyration (R). 
+    
+    Parameters:
+      a : 2D numpy array (a fancy grid) showing where the cluster is.
+      
+    Returns:
+      S : The number of occupied sites (basically how big the cluster is).
+      R : The radius of gyration (tells us how far those occupied
+          sites are is spread from 
+          the center of mass).
+    '''
+    
+    # Find all the places where something actually exists in this grid.
+    indices = np.argwhere(a > 0)  # Get all (row, col) positions that aren’t empty.
+    
+    # Count how many spots are filled. That’s the cluster size (S).
+    S = len(indices)  # Just the length of the list of occupied spots.
+    
+    # Figure out the "center of mass," aka the average position of all filled spots.
+    center = np.mean(indices, axis=0)  # Just averaging the positions.
+    
+    # Measure how far each occupied spot is from the center.
+    distances = np.linalg.norm(indices - center, axis=1)  # Euclidean distance for the win.
+    # Compute the actual radius of gyration.
+    # This is like taking the average squared distance from the center and square-rooting it.
+    R = np.sqrt(np.mean(distances**2))
+    
+    # Return the size of the cluster (S) and how spread out it is (R).
+    return S, R
+
+
+# Simulation Parameters 
+grid_size = 200                   # Size of the simulation grid
+a = np.zeros((grid_size, grid_size))
+seed_center = np.array([grid_size//2, grid_size//2])
+a[seed_center[0], seed_center[1]] = 1  # Seed the cluster in the middle
+
+stepChoices = [[-1, 0], [0, -1], [1, 0], [0, 1]]
+num_walkers = 1000
+
+# Lists to record cluster mass and radius during growth.
+S_list = []
+R_list = []
+snapshot_steps = []  # To record which iteration the snapshot was taken
+
+# Run the DLA Simulation 
+for i in range(num_walkers):
+    walker_length = runWalker(a, stepChoices, grid_size, seed_center)
+    print(f"Walker {i+1}/{num_walkers}, Length: {walker_length}")
+    
+    # Record fractal data every 50 walkers and at the last walker.
+    if i % 50 == 0 or i == num_walkers - 1:
+        S, R = calculate_radius_of_gyration(a)
+        S_list.append(S)
+        R_list.append(R)
+        snapshot_steps.append(i)
+        
+# Fractal Dimension Calculation 
+# The relation S ~ R^D leads to log(S) = D * log(R) + constant.
+log_S = np.log(S_list)
+log_R = np.log(R_list)
+
+# Linear fit to log-log data.
+slope, intercept = np.polyfit(log_R, log_S, 1)
+D_estimated = slope
+
+
+'''
+#Extra Plots
+# --- Plotting Results ---
+plt.figure(figsize=(12, 5))
+
+# Plot the evolving fractal measurements.
+plt.subplot(1, 2, 1)
+plt.plot(snapshot_steps, S_list, 'bo-', label='Cluster Mass S')
+plt.xlabel('Walker Number')
+plt.ylabel('Cluster Mass S')
+plt.title('Cluster Mass Growth')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(snapshot_steps, R_list, 'ro-', label='Radius of Gyration R')
+plt.xlabel('Walker Number')
+plt.ylabel('Radius of Gyration R')
+plt.title('Cluster Size (R) Growth')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+'''
+
+# Plot log-log plot for fractal dimension estimation.
+plt.figure(figsize=(6, 5))
+plt.plot(log_R, log_S, 'o', label='Data points')
+plt.plot(log_R, slope * log_R + intercept, '-', label=f'Fit: slope={slope:.3f}')
+plt.xlabel('log(R)')
+plt.ylabel('log(S)')
+plt.title('Fractal Dimension Estimation')
+plt.legend()
+plt.show()
+
+print(f"Estimated Fractal Dimension D = {D_estimated:.3f}")
