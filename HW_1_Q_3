@@ -1,0 +1,94 @@
+'''
+File: HW_1_Q_3
+
+Class: PLS 481, Spring 2025
+
+Author: Ruta Rezene
+
+Purpose: Grow a DLA cluster from the Top down. This code mimics a random walker with the start position being at 
+    all y values with x value at 0 to show a top down formation ie horizontal. Using matplotlib to 
+    visualize the process on the grid, the walker walks at random, connects to the 
+    structure when it reaches an occupied cell, and repeats this process 10,000 times.
+    I attacked this problem by making a first making a for loop that i will use to repeat over every
+    grid in the 200x200 grid but I made it so that for each iteration of i 0-199 since 200 is noninclusinve in the 
+    range function I would also set x = 0 which guarantees that there is a matching y-coordinate (beginning at 0) for each 
+    x-coordinate (ranging from 0 to 199), where the walker can wander erratically along the y-axis and the 
+    walkers will disperse from the top of the grid down the horizontal axis, this process is repeated 200 times to 
+    signify that its done 200 differnt times spanning across the whole 200 pixels horizontally.
+    
+Sources: Lecture content
+'''
+
+import numpy as np
+import matplotlib.pyplot as p
+
+
+def run(sp):
+    #Possible increments of steps
+    stepChoices=[[-1,0],[0,-1],[1,0],[0,1]]
+    # Walk as long no taken position is reached
+    while a[sp[0],sp[1]] == 0:
+        #Randomly choose a step to go
+        step=np.array(stepChoices[np.random.randint(0,4)])
+        #Add the step to the current position
+        sp=sp+step
+        # If the new position is within the array
+        if sp[0]>=0 and sp[1]>=0 and sp[0]<200 and sp[1]<200:
+            # If the current position is already taken we want to extend the structure
+            if a[sp[0],sp[1]] > 0: # Remember we initialized our drawing array with zeros. 
+                # Set the last position as taken aka stick to the structure. Here we set the value in the array to the distance from the center
+                a[(sp-np.array(step))[0],(sp-np.array(step))[1]]=1
+                # refresh the image
+                im.set_data(a) # set the data
+                p.draw() # draw the image
+                p.pause(0.001) # give the computer time to draw
+        else:
+            # else go 1 step back and choose again
+            sp=sp-np.array(step)
+
+
+
+'''
+#Variable definitions
+'''
+# Array to walk in
+a = np.zeros((200, 200))
+
+
+
+
+# repeat process 200 times (i : 0-199)
+for i in range(200):
+    # with an x position at 0 (start from the x axis), and a i position being form 0-199 for the y 
+    # value, meaning that walker can occupy any grid cell along the y axis
+    a[0, i] = 1
+
+
+startPos=[]
+i=0
+im = p.imshow(a, interpolation='bicubic', cmap='summer_r')
+#Possible increments of steps
+stepChoices=[[-1,0],[0,-1],[1,0],[0,1]]
+
+#p.ion()
+#We want 1000 walker particles to stick to the structure
+
+while i <10000: #[0,1,2,3 ... 1999] 
+    print ("Walker running: "+str(i)) # Output on command line. Helpful for debugging to see if the loop is running
+    stepChoices=[[0,0],[0,0],[0,0],[0,0]]
+    #Select the starting position of the x-ax
+    startX=np.random.randint(0,200)
+    startAx=np.random.randint(0,4)
+    #Set the starting position from where the random walker starts walking
+    if startAx==0: startPos=np.array([0,startX])
+    elif startAx==1: startPos=np.array([199,startX])
+    elif startAx==2: startPos=np.array([startX,0])
+    elif startAx==3: startPos=np.array([startX,199])
+
+    run(startPos)
+    i+=1
+        
+
+
+
+
