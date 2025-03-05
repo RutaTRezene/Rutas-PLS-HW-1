@@ -1,0 +1,95 @@
+'''
+File: HW_1_Q_4.py
+
+Class: PLS 481, Spring 2025
+
+Author: Ruta Rezene
+
+Purpose: This code simulates a random walker on a 200x200 grid, starting at 
+the center of the grid. The walker moves in one of four random directions—up, 
+down, left, or right—until it reaches an occupied cell. When the walker hits 
+an occupied cell, it "sticks" to it, marks that spot as part of the structure,
+and then resets back to the center of the grid to start the process again. 
+The walker repeats this cycle, with the grid being updated visually using
+matplotlib after each move, so you can watch the process unfold. This 
+continues for 1000 walks.
+
+The logic behind it is that each time the walker moves, it checks if 
+it has hit an open spot. If the spot is occupied, then it will continue walking 
+unitl it finds a grid cell of 0 which it will make into a 1 signifying occupancy
+after this grid cell is found, the walker goes back to the center and repeats this process. 
+It’s like chaotic movements through the grid that eventually forms a structure 
+as the walkers stick to already occupied spots, creating a diffusion-limited 
+aggregation pattern. The process uses simple steps—random movement, boundary 
+checking, and resetting—to simulate how particles might accumulate in a 
+structured way over time. 
+
+The behaviour is quite different from the branching 
+that weve done in class for the fact that since this programs walker moves back
+to the center after every movement which makes it hard for the walker to intersect
+with itself, overtime this behaviour outputs a pretty cool circular shape which 
+looks alot different from the DLA branching witnessed during lecture
+   
+Sources: Lecture content, ChatGpt
+'''
+
+
+import numpy as np
+import matplotlib.pyplot as p  
+
+def runWalker():
+    walkerLength = 0 
+    
+    # Initialize the start at the center of the array ie 100, 100
+    startPos = np.array([100, 100])  
+    path = [startPos.copy()]  # To keep track of the path
+    
+    # While walker hasn't found an open spot
+    while True:
+        # Randomly choose a stop to take from our stepChoices 2d list 0-3 since 4 is noninclusive
+        step = np.array(stepChoices[np.random.randint(0, 4)])
+        #add step to current posiont to create our new positon
+        newPos = startPos + step
+
+        # Check if within bounds
+        if 0 <= newPos[0] < 200 and 0 <= newPos[1] < 200:
+            # If walker hits an occupied spot, keep walking
+            if a[newPos[0], newPos[1]] > 0:
+                startPos = newPos  # Continue walking
+                path.append(newPos)
+                continue  # Continue without resetting to the center
+
+            # If walker hits a free spot, stick to it and return to center
+            else:
+                a[newPos[0], newPos[1]] = 1  # Mark this cell as occupied
+                im.set_data(a)  
+                p.draw()  
+                p.pause(0.001)  
+                startPos = np.array([100, 100])  # Reset to center after finding free spot
+                path.clear()  # Clear the path, start fresh
+                break  # Walker finishes, exit loop
+
+    return walkerLength  
+
+# Global variables
+a = np.zeros((200, 200))  
+stepChoices = [[-1, 0], [0, -1], [1, 0], [0, 1]]  
+a[100, 100] = 1  # Start at the center
+im = p.imshow(a, cmap='summer_r')  
+
+# Run 1000 walkers
+for i in range(1000):
+    print(f"Walker running: {i}")
+    walkerL = runWalker()
+    print(f"Walker Length: {walkerL}")
+
+
+
+
+
+
+
+
+
+
+
